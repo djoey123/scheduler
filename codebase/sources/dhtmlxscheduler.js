@@ -1465,7 +1465,6 @@ dataProcessor.prototype = {
 	setUpdated: function (rowId, state, mode) {
 		if (this._silent_mode) return;
 		var ind = this.findRow(rowId);
-
 		mode = mode || "updated";
 		var existing = this.obj.getUserData(rowId, this.action_param);
 		if (existing && mode == "updated") mode = existing;
@@ -1552,7 +1551,9 @@ dataProcessor.prototype = {
 		this._beforeSendData(this._getRowData(rowId), rowId);
 	},
 	_beforeSendData: function (data, rowId) {
-		if (!this.callEvent("onBeforeUpdate", [rowId, this.getState(rowId), data])) return false;
+		if (!this.callEvent("onBeforeUpdate", [rowId, this.getState(rowId), data])) {
+            return false;
+        }
 		this._sendData(data, rowId);
 	},
 	serialize: function (data, id) {
@@ -1655,6 +1656,7 @@ dataProcessor.prototype = {
 			var url = a3.replace(/(\&|\?)editing\=true/, "");
 			var data = "";
 			var method = "post";
+
 
 			if (state == "inserted") {
 				data = this.serialize(a1, rowId);
@@ -1828,6 +1830,9 @@ dataProcessor.prototype = {
 
 			if (tag) {
 				var action = tag.action || this.getState(id) || "updated";
+                if(action !== 'error') {
+                    scheduler._new_event = null;
+                }
 				var sid = tag.sid || id[0];
 				var tid = tag.tid || id[0];
 				that.afterUpdateCallback(sid, tid, action, tag);
@@ -5801,6 +5806,7 @@ scheduler.editStop = function(mode, id) {
 	if (id && this._edit_id == id) return;
 	var ev = this.getEvent(this._edit_id);
 	if (ev) {
+	    console.log(ev);
 		if (mode) ev.text = this._editor.value;
 		this._edit_id = null;
 		this._editor = null;
@@ -5811,12 +5817,15 @@ scheduler.editStop = function(mode, id) {
 scheduler._edit_stop_event = function(ev, mode) {
 	if (this._new_event) {
 		if (!mode) {
+            this._new_event = null;
+            // wanneer gebruiker de lightbox weg klikt maak dan new event leeg
+            // wanneer de gebruiker dan een al bestande event aanklikt opent gewoon het bijwerken modal
+
 			if (ev) // in case of custom lightbox user can already delete event
 				this.deleteEvent(ev.id, true);
 		} else {
 			this.callEvent("onEventAdded", [ev.id, ev]);
 		}
-		this._new_event = null;
 	} else {
 		if (mode){
 			this.callEvent("onEventChanged", [ev.id, ev]);
@@ -6710,6 +6719,7 @@ scheduler.endLightbox = function(mode, box){
 
 	var event = scheduler.getEvent(this._lightbox_id);
 	if(event)
+
 		this._edit_stop_event(event, mode);
 	if (mode)
 		scheduler.render_view_data();
@@ -6718,8 +6728,10 @@ scheduler.endLightbox = function(mode, box){
 	if (this._custom_lightbox){
 		this._lightbox = this._temp_lightbox;
 		this._custom_lightbox = false;
-	}
-	this._temp_lightbox = this._lightbox_id = null; // in case of custom lightbox user only calls endLightbox so we need to reset _lightbox_id
+	} else {
+	    // Wanneer lightbox_id op null is gezet, kunnen we geen error meer afhandelen, wanneer de gebruiker dan op save drukt kent hij het event niet meer.
+        this._temp_lightbox = this._lightbox_id = null; // in case of custom lightbox user only calls endLightbox so we need to reset _lightbox_id
+    }
 	this._waiAria.lightboxHiddenAttr(box);
 	this.callEvent("onAfterLightbox",[]);
 };
