@@ -5806,7 +5806,6 @@ scheduler.editStop = function(mode, id) {
 	if (id && this._edit_id == id) return;
 	var ev = this.getEvent(this._edit_id);
 	if (ev) {
-	    console.log(ev);
 		if (mode) ev.text = this._editor.value;
 		this._edit_id = null;
 		this._editor = null;
